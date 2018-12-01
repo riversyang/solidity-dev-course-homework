@@ -66,6 +66,7 @@ contract SimplePoS is Ownable {
             allMiners[lastMinerIndex] = 0;
             allMiners.length--;
             allMinersIndex[_addr] = 0;
+            allMinersIndex[lastMiner] = minerIndex;
             totalStake = totalStake.sub(minerStakes[_addr]);
             minerStakes[_addr] = 0;
         }
@@ -76,7 +77,18 @@ contract SimplePoS is Ownable {
      * @notice 按照矿工的 Stake 在 totalStake 中的比例确定其获得记账权的几率
      */
     function selectNewMiner() public onlyOwner {
-
+        uint256 rand = uint256(keccak256(abi.encodePacked(block.timestamp))) % totalStake;
+        uint256 tmpSum;
+        address curAddress;
+        uint minersCount = allMiners.length;
+        for (uint i = 0; i < minersCount; i++) {
+            curAddress = allMiners[i];
+            tmpSum = tmpSum.add(minerStakes[curAddress]);
+            if (tmpSum > rand) {
+                curMiner = curAddress;
+                break;
+            }
+        }
     }
 
 }

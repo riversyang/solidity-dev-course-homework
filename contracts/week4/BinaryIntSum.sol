@@ -27,5 +27,46 @@ contract BinaryIntSum {
         internal pure returns(uint16 nv)
     {
         // To be completed
+
+        // standard: 20333
+        // uint8 bitCount;
+        // nv = input;
+        // while (nv != 0) {
+        //     nv = nv & (nv - 1);
+        //     bitCount++;
+        // }
+        // nv = uint16(2) ** bitCount - 1;
+
+        // standard-best: 18586
+        // nv = 1;
+        // uint16 tv = input;
+        // while (tv != 0) {
+        //     tv &= (tv - 1);
+        //     nv = nv + nv;
+        // }
+        // nv -= 1;
+
+        // assembly: 19876
+        // assembly {
+        //     let bitCount := 0
+        //     let tv := input
+        //     for {} iszero(iszero(tv)) {} {
+        //         tv := and(tv, sub(tv, 1))
+        //         bitCount := add(bitCount, 1)
+        //     }
+        //     nv := sub(exp(2, bitCount), 1)
+        // }
+
+        // assembly-best: 17632
+        // assembly {
+        //     nv := 1
+        //     let tv := input
+        //     for {} iszero(iszero(tv)) {} {
+        //         tv := and(tv, sub(tv, 1))
+        //         nv := add(nv, nv)
+        //     }
+        //     nv := sub(nv, 1)
+        // }
+
     }
 }

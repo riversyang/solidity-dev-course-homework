@@ -77,6 +77,15 @@ contract SimpleRndOracle is Ownable {
         // 需要注册的地址必须是合约地址
         require(msg.sender.isContract());
         // TODO: add implementation
+        // 这个检查不是必须的，但推荐增加，因为照目前的设计，同一个地址调用多次时只会保留最后一次调用的 requestID，而外部数据服务依然会多次返回数据，会有相应的资源浪费。并且这多次注册未必时“设计中的”，所以在此加入对是否已注册数据请求的检查是一种相对安全的数据服务设计。
+        require(requestIDs[msg.sender] == 0, "You already registered a request, please wait.");
+        uint256 nonce = requesterNonce[msg.sender].add(1);
+        // requestID 应该是一个全局唯一的数值，因为这个合约是一个公共数据服务，所以其生成算法可以参考以太坊协议中生成新合约地址的算法。
+        uint256 requestId = uint256(keccak256(abi.encodePacked(msg.sender, nonce)));
+        requesterNonce[msg.sender] = nonce;
+        requestIDs[msg.sender] = requestId;
+        callbackAddresses[requestId] = msg.sender;
+        emit requestRegistered(msg.sender, requestId);
     }
 
     /**
@@ -91,6 +100,14 @@ contract SimpleRndOracle is Ownable {
         // TODO: add implementation
         // 注意，回调之前需要先用 SupportsInterfaceWithLookup 接口
         // 查询接收数据的合约是否有必要的回调函数
+        address callbackAddr = callbackAddresses[_requestID];
+        require(requestIDs[callbackAddr] == _requestID);
+        RndNumberReceiver receiver = RndNumberReceiver(callbackAddr);
+        require(receiver.supportsInterface(CALLBACK_FUNC_SIG));
+        // 以下两个处理是为了清理已经用过的数据，且能得到 gas 返还，是推荐的最佳实践
+        requestIDs[address(receiver)] = 0;
+        callbackAddresses[_requestID] = 0;
+        receiver.receiveRnd(_rndNumber);
     }
 
 }
