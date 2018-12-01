@@ -1,30 +1,38 @@
-## OpenZepplin 源代码详解 - part1
+## OpenZepplin 2.0 源代码详解 - part1
 
-#### 通用基础合约
+#### 算术运算（math）
 
-* 地址工具（AddressUtils.sol）
+* 基本算数（Math.sol）- library
+
+  library 中的 internal 类型的函数，必须用 using for 的方式来调用。
+
+* 安全算数（SafeMath.sol）- library
+
+  library 中的 internal 类型的函数，必须用 using for 的方式来调用。
+
+  注意 assert 的用法：assert 通常用来检查那些 unexpected 数据错误或者正常情况下不会发生的错误（不经常会发生的、小概率错误），不能添加提示消息，不会返还 gas；require 通常用来检查输入参数或者计算结果是否符合设计要求，检查一些正常情况下会发生的错误，比如余额不足、某个特定数据不满足业务功能要求，可以添加提示消息，会返还 gas。
+
+#### 通用工具（utils）
+
+- 地址工具（Address.sol）- library
+
+  library 中的 internal 类型的函数，必须用 using for 的方式来调用。
 
   注意在合约的构造函数执行过程中，合约的关联代码是空。
 
-* 椭圆曲线公钥恢复（ECRecovery.sol）
+- 数组工具（Arrays.sol）- library
+
+  library 中的 internal 类型的函数，必须用 using for 的方式来调用。
 
   动态类型（比如本例中的 bytes）的数据存储结构和访问方式
 
-* 限制合约余额（LimitBalance.sol）
+- 限制合约余额（LimitBalance.sol）
 
-* Merkle 证明（MerkleProof.sol）
+- Merkle 证明（MerkleProof.sol）
 
-* 拒绝重入（ReentrancyGuard.sol）
+- 拒绝重入（ReentrancyGuard.sol）- contract
 
   通常建议将函数具体实现和控制调用的 wrapper 分为两个函数。
-
-#### 算术运算
-
-* 基本算数（Math.sol）
-
-* 安全算数（SafeMath.sol）
-
-  注意 assert 的用法：assert 通常用来检查那些 unexpected 数据错误或者正常情况下不会发生的错误（不经常会发生的、小概率错误），不能添加提示消息，不会返还 gas；require 通常用来检查输入参数或者计算结果是否符合设计要求，检查一些正常情况下会发生的错误，比如余额不足、某个特定数据不满足业务功能要求，可以添加提示消息，会返还 gas。
 
 #### 自省（Introspection）
 
