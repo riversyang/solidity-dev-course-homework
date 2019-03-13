@@ -5,7 +5,7 @@ import "../openzeppelin-solidity-2.0.0/contracts/ownership/Ownable.sol";
 import "../openzeppelin-solidity-2.0.0/contracts/access/Roles.sol";
 import "../openzeppelin-solidity-2.0.0/contracts/token/ERC20/ERC20.sol";
 
-contract SimpleToken is Ownable, ERC20 {
+contract SimpleToken1 is Ownable, ERC20 {
     // 使用 Address
     using Address for address;
     // 使用 SafeMath
@@ -51,7 +51,7 @@ contract SimpleToken is Ownable, ERC20 {
     mapping (address => uint256) private privateSalesReleased;
 
     // Owner 的钱包地址
-    address ownerWallet;
+    address private ownerWallet;
 
     /**
      * @dev 构造函数时需传入 Owner 指定的钱包地址
@@ -64,7 +64,7 @@ contract SimpleToken is Ownable, ERC20 {
     }
 
     modifier onlyAgent() {
-        require(isAgent(msg.sender), "Only agents can call the function.");
+        require(isAgent(msg.sender), "Only agents can call this function.");
         _;
     }
 
@@ -78,9 +78,6 @@ contract SimpleToken is Ownable, ERC20 {
      * @param _amount 私募代理人的转账限额
      */
     function addAgent(address _account, uint256 _amount) public onlyOwner {
-        // TODO
-        require(block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH), "You cannot add agent after private sale period.");
-
         _addAgent(_account);
         approve(_account, _amount);
     }

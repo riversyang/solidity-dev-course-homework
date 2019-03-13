@@ -27,13 +27,13 @@ contract PersonalPayment is Ownable, PullPayment {
         }
     }
 
-    function withdrawPayments() public {
+    function withdrawPayments(address payee) public {
         // TODO
-        uint256 withdrawAmount = payments(msg.sender);
+        uint256 withdrawAmount = payments(payee);
         require(withdrawAmount > 0, "There is no pending payment.");
 
         totalPayments = totalPayments.sub(withdrawAmount);
-        withdrawPayments(msg.sender);
+        super.withdrawPayments(payee);
     }
 
     function destroy() public onlyOwner {

@@ -9,6 +9,7 @@ contract SimpleShop {
     struct Purchase {
         uint256 number;
         uint256 createdTime;
+        uint256 confirmedTime;
         uint256 value;
         address buyer;
         State state;
@@ -47,6 +48,7 @@ contract SimpleShop {
         Purchase memory newPurchase = Purchase({
             number: allPurchases.length + 1,
             createdTime: block.timestamp,
+            confirmedTime: 0,
             value: _value,
             buyer: address(0),
             state: State.Created
@@ -76,6 +78,7 @@ contract SimpleShop {
         Purchase storage cp = allPurchases[_number - 1];
         require(cp.state == State.Created, "You can only confirm a purchase which is just created.");
         require(msg.value == cp.value * 2, "You need to transfer double amount of Purchase value.");
+        cp.confirmedTime = block.timestamp;
         cp.buyer = msg.sender;
         cp.state = State.Confirmed;
         emit PurchaseConfirmed(_number);
@@ -88,7 +91,7 @@ contract SimpleShop {
     function confirmReceived(uint256 _number) public isValidPurchaseNumber(_number) {
         Purchase storage cp = allPurchases[_number - 1];
         require(cp.state == State.Confirmed, "You can only confirm received for a confirmed purchase.");
-        if (block.timestamp - cp.createdTime > SECONDS_OF_DAY) {
+        if (block.timestamp - cp.confirmedTime > SECONDS_OF_DAY) {
             if (msg.sender != cp.buyer && msg.sender != seller) {
                 revert("Only seller and buyer can confirm received for this purchase now.");
             }

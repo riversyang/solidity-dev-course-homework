@@ -65,7 +65,7 @@ contract SimpleToken2 is Ownable, ERC20 {
     }
 
     modifier onlyAgent() {
-        require(isAgent(msg.sender), "Only agents can call the function.");
+        require(isAgent(msg.sender), "Only agents can call this function.");
         _;
     }
 
@@ -211,8 +211,8 @@ contract SimpleToken2 is Ownable, ERC20 {
      * @dev 新transfer保证地址的token余额不大于总量的3%
      */
     function transfer(address _to, uint256 _value) public returns (bool) {
-        require(isPrivateSaleFinished() || msg.sender == address(this), "You cannot call this function in private sale period.");
-        require(_value.add(balanceOf(_to)) <= ADDRESS_HOLDING_AMOUNT, "An address cannot hold more than 30 million tokens.");
+        require(isPrivateSaleFinished() || msg.sender == address(this), "You can not call transfer within private sale period.");
+        require(_value.add(balanceOf(_to)) <= ADDRESS_HOLDING_AMOUNT, "An address can not hold more than 30 million tokens.");
         super.transfer(_to, _value);
     }
 
@@ -227,7 +227,7 @@ contract SimpleToken2 is Ownable, ERC20 {
         public
         returns (bool)
     {
-        require(isPrivateSaleFinished(), "You cannot call this function in private sale period.");
+        require(isPrivateSaleFinished(), "Only agent can call transferFrom within private sale period.");
         require(_value.add(balanceOf(_to)) <= ADDRESS_HOLDING_AMOUNT, "An address cannot hold more than 30 million tokens.");
         super.transferFrom(_from, _to, _value);
     }
