@@ -1,8 +1,7 @@
 pragma solidity ^0.4.24;
 
-import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
-
+import "../openzeppelin-solidity-2.0.0/contracts/math/SafeMath.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/ownership/Ownable.sol";
 
 contract SimplePoS is Ownable {
     // 对所有 uint256 类型使用 SafeMath
@@ -20,7 +19,6 @@ contract SimplePoS is Ownable {
 
     /**
      * @dev 将合约创建者指定为第一个矿工，以保证合约的运作
-     * @notice 
      */
     constructor() payable public {
         allMiners.push(msg.sender);
@@ -32,7 +30,6 @@ contract SimplePoS is Ownable {
      * @dev 为了简化处理，只允许由合约创建者添加矿工合约地址
      * @param _addr 要添加的矿工节点地址
      * @param _minerStake 矿工节点的 Stake
-     * @notice 
      */
     function addMiner(address _addr, uint256 _minerStake) external onlyOwner {
         if (allMiners.length == 0 ||
@@ -52,7 +49,6 @@ contract SimplePoS is Ownable {
     /**
      * @dev 为了简化处理，只允许由合约创建者移除矿工合约地址
      * @param _addr 要移除的矿工节点地址
-     * @notice 
      */
     function removeMiner(address _addr) external onlyOwner {
         // 至少需要保留一个矿工

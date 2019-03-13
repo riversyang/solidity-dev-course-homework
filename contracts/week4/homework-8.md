@@ -27,6 +27,6 @@
 
 要完成这个作业，请 fork 下列工程再创建新分支直接修改代码：
 
-https://git.yikuailianxi.com/adv_ethereum_s1/lesson8-sources.git
+https://git.yikuailianxi.com/adv_ethereum_s2/lesson8-sources.git
 
 代码修改完成之后请测试通过再提交。

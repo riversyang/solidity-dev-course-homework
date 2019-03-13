@@ -1,11 +1,11 @@
 pragma solidity ^0.4.24;
 
-import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../openzeppelin-solidity/contracts/payment/PullPayment.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/math/SafeMath.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/ownership/Ownable.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/payment/PullPayment.sol";
 
 contract PersonalPayment is Ownable, PullPayment {
-    // 使用库合约
+    // 使用 SafeMath
     using SafeMath for uint256;
     // 其他状态变量
 
