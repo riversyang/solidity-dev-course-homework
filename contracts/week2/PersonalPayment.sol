@@ -1,8 +1,8 @@
 pragma solidity ^0.4.24;
 
-import "../openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../openzeppelin-solidity/contracts/payment/PullPayment.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/math/SafeMath.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/ownership/Ownable.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/payment/PullPayment.sol";
 
 contract PersonalPayment is Ownable, PullPayment {
     // 使用库合约
@@ -15,14 +15,14 @@ contract PersonalPayment is Ownable, PullPayment {
 
     function asyncPay(address _dest, uint256 _amount) public onlyOwner {
         // TODO
-        require(_dest != address(0));
-        require(_dest != owner);
-        require(_amount > 0);
+        require(_dest != address(0), "Destination address cannot be zero address.");
+        require(_dest != owner(), "Destination address cannot be owner's address.");
+        require(_amount > 0, "You need to specify the amount.");
 
         if (_amount > address(this).balance) {
             emit BlanceNotEnough(_amount.sub(address(this).balance));
         } else {
-            asyncTransfer(_dest, _amount);
+            _asyncTransfer(_dest, _amount);
             totalPayments = totalPayments.add(_amount);
         }
     }
@@ -30,17 +30,17 @@ contract PersonalPayment is Ownable, PullPayment {
     function withdrawPayments() public {
         // TODO
         uint256 withdrawAmount = payments(msg.sender);
-        require(withdrawAmount > 0);
+        require(withdrawAmount > 0, "There is no pending payment.");
 
         totalPayments = totalPayments.sub(withdrawAmount);
-        super.withdrawPayments();
+        withdrawPayments(msg.sender);
     }
 
     function destroy() public onlyOwner {
         // TODO
-        require(totalPayments == 0);
+        require(totalPayments == 0, "You cannot destroy the contract before you pay all pending payments.");
 
-        selfdestruct(owner);
+        selfdestruct(owner());
     }
 
     function() external payable onlyOwner {

@@ -1,13 +1,17 @@
 pragma solidity ^0.4.24;
 
-import "../openzeppelin-solidity/contracts/AddressUtils.sol";
-import "../openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "../openzeppelin-solidity/contracts/ownership/rbac/RBAC.sol";
-import "../openzeppelin-solidity/contracts/token/ERC20/StandardToken.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/utils/Address.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/ownership/Ownable.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/access/Roles.sol";
+import "../openzeppelin-solidity-2.0.0/contracts/token/ERC20/ERC20.sol";
 
-contract SimpleToken is Ownable, RBAC, StandardToken {
-    using AddressUtils for address;
+contract SimpleToken is Ownable, ERC20 {
+    // 使用 Address
+    using Address for address;
+    // 使用 SafeMath
     using SafeMath for uint256;
+    // 使用 Roles
+    using Roles for Roles.Role;
 
     string public constant name    = "SPT";
     string public constant symbol  = "SPT";
@@ -30,8 +34,12 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
     // 两个月时间的时间戳增量常数（60天）
     uint256 public constant TIMESTAMP_INCREMENT_OF_2MONTH   = 5184000;
 
-    // 私募代理人的 Role 常量
-    string public constant ROLE_PRIVATESALEWHITELIST = "privateSaleWhitelist";
+    // 代理人角色名单
+    Roles.Role private agents;
+    // 添加代理人
+    event AgentAdded(address indexed account);
+    // 移除代理人
+    event AgentRemoved(address indexed account);
 
     // 合约创建的时间戳
     uint256 public contractStartTime;
@@ -52,8 +60,57 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
     constructor(address _ownerWallet) public {
         ownerWallet = _ownerWallet;
         contractStartTime = block.timestamp;
-        totalSupply_ = INITIAL_SUPPLY;
-        balances[msg.sender] = totalSupply_;
+        _mint(msg.sender, INITIAL_SUPPLY);
+    }
+
+    modifier onlyAgent() {
+        require(isAgent(msg.sender), "Only agents can call the function.");
+        _;
+    }
+
+    function isAgent(address account) public view returns (bool) {
+        return agents.has(account);
+    }
+
+    /**
+     * @dev 添加私募代理人地址到白名单并设置其限额
+     * @param _account 私募代理人地址
+     * @param _amount 私募代理人的转账限额
+     */
+    function addAgent(address _account, uint256 _amount) public onlyOwner {
+        // TODO
+        require(block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH), "You cannot add agent after private sale period.");
+
+        _addAgent(_account);
+        approve(_account, _amount);
+    }
+
+    /**
+     * @dev 将私募代理人地址从白名单移除
+     * @param _account 私募代理人地址
+     */
+    function removeAgent(address _account) public onlyOwner {
+        // TODO
+        _removeAgent(_account);
+        approve(_account, 0);
+    }
+
+    /**
+     * @dev 私募代理人自己放弃代理人权限
+     */
+    function renounceAgent() public onlyAgent {
+        // TODO
+        _removeAgent(msg.sender);
+    }
+
+    function _addAgent(address account) internal {
+        agents.add(account);
+        emit AgentAdded(account);
+    }
+
+    function _removeAgent(address account) internal {
+        agents.remove(account);
+        emit AgentRemoved(account);
     }
 
     /**
@@ -62,34 +119,6 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
      */
     function changeOwnerWallet(address _ownerWallet) public onlyOwner {
         ownerWallet = _ownerWallet;
-    }
-
-    /**
-     * @dev 添加私募代理人地址到白名单并设置其限额
-     * @param _addr 私募代理人地址
-     * @param _amount 私募代理人的转账限额
-     */
-    function addAddressToPrivateWhiteList(address _addr, uint256 _amount)
-        public onlyOwner
-    {
-        // TODO
-        // 仅允许在合约创建两个月内调用
-        require(block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH));
-
-        addRole(_addr, ROLE_PRIVATESALEWHITELIST);
-        approve(_addr, _amount);
-    }
-
-    /**
-     * @dev 将私募代理人地址从白名单移除
-     * @param _addr 私募代理人地址
-     */
-    function removeAddressFromPrivateWhiteList(address _addr)
-        public onlyOwner
-    {
-        // TODO
-        removeRole(_addr, ROLE_PRIVATESALEWHITELIST);
-        approve(_addr, 0);
     }
 
     /**
@@ -103,15 +132,14 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
      * @dev 私募处理
      * @param _beneficiary 收取 token 地址
      */
-    function privateSale(address _beneficiary)
-        public payable onlyRole(ROLE_PRIVATESALEWHITELIST)
+    function privateSale(address _beneficiary) public payable onlyAgent
     {
         // TODO
         // 仅允许 EOA 购买
-        require(msg.sender == tx.origin);
-        require(!msg.sender.isContract());
+        require(msg.sender == tx.origin, "You cannot buy the token with contract account.");
+        require(!msg.sender.isContract(), "You cannot buy the token with contract account.");
         // 仅允许在合约创建两个月内调用
-        require(block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH));
+        require(block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH), "You can only do private sale in private sale period.");
 
         uint256 purchaseValue;
         if (block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_WEEK)) {
@@ -135,12 +163,11 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
      * @param _addr 收取 token 地址
      * @param _amount 转账 token 数量
      */
-    function withdrawPrivateSaleCoins(address _addr, uint256 _amount)
-        public onlyRole(ROLE_PRIVATESALEWHITELIST)
+    function withdrawPrivateSaleCoins(address _addr, uint256 _amount) public onlyAgent
     {
         // TODO
         // 仅允许在合约创建两个月内调用
-        require(block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH));
+        require(block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH), "You can only call this function in private sale period.");
 
         _privateSaleTransferFromOwner(_addr, _amount);
     }
@@ -156,11 +183,11 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
         uint256 newPrivateSaleAmount = privateSalesReleased[msg.sender].add(_amount);
         uint256 newTotalPrivateSaleAmount = totalPrivateSalesReleased.add(_amount);
         // 检查私募代理人转账总额是否超限
-        require(newPrivateSaleAmount <= PRIVATE_SALE_AGENT_AMOUNT);
+        require(newPrivateSaleAmount <= PRIVATE_SALE_AGENT_AMOUNT, "Each private sale agent cannot sell over 90 million tokens.");
         // 检查私募转账总额是否超限
-        require(newTotalPrivateSaleAmount <= PRIVATE_SALE_AMOUNT);
+        require(newTotalPrivateSaleAmount <= PRIVATE_SALE_AMOUNT, "Private sale amount cannot over 600 million.");
 
-        require(super.transferFrom(owner, _to, _amount));
+        require(super.transferFrom(owner(), _to, _amount), "Failed to call transferFrom function.");
         privateSalesReleased[msg.sender] = newPrivateSaleAmount;
         totalPrivateSalesReleased = newTotalPrivateSaleAmount;
         return true;
@@ -171,7 +198,7 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
      */
     function withdrawFunds() public onlyOwner {
          // TODO
-        require(block.timestamp > contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH));
+        require(block.timestamp > contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH), "You can only call this function within private sale period.");
 
         ownerWallet.transfer(address(this).balance);
     }
@@ -194,17 +221,17 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
         // 记得调用 super.transfer 函数
         // TODO
         // 在合约创建后的两个月内，仅 owner 可以用 transfer 函数转账
-        if (msg.sender != owner) {
-            require(block.timestamp > contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH));
+        if (msg.sender != owner()) {
+            require(block.timestamp > contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH), "You can not call transfer within private sale period.");
         }
         // 转账后目标地址的余额不能超过单个地址所能持有的 token 量上限
-        require(balances[_to].add(_value) <= ADDRESS_HOLDING_AMOUNT);
+        require(balanceOf(_to).add(_value) <= ADDRESS_HOLDING_AMOUNT, "You cannot hold over 30 million tokens.");
 
-        if (msg.sender == owner && block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH)) {
+        if (msg.sender == owner() && block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH)) {
             // 在私募期间，owner 的转账额度需要算在私募总额度中
             uint256 newTotalPrivateSaleAmount = totalPrivateSalesReleased.add(_value);
             // 检查私募转账总额是否超限
-            require(newTotalPrivateSaleAmount <= PRIVATE_SALE_AMOUNT);
+            require(newTotalPrivateSaleAmount <= PRIVATE_SALE_AMOUNT, "Private sale amount is too much.");
             result = super.transfer(_to, _value);
             totalPrivateSalesReleased = newTotalPrivateSaleAmount;
         } else {
@@ -227,12 +254,12 @@ contract SimpleToken is Ownable, RBAC, StandardToken {
         // 记得调用 super.transferFrom 函数
         // TODO
         // 在合约创建后的两个月内，仅私募代理人可以用 transferFrom 函数转账
-        if (!hasRole(msg.sender, ROLE_PRIVATESALEWHITELIST)) {
-            require(block.timestamp > contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH));
+        if (!isAgent(msg.sender)) {
+            require(block.timestamp > contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH), "Only agent can call transferFrom within private sale period.");
         }
         // 转账后目标地址的余额不能超过单个地址所能持有的 token 量上限
-        require(balances[_to].add(_value) <= ADDRESS_HOLDING_AMOUNT);
-        if (hasRole(msg.sender, ROLE_PRIVATESALEWHITELIST)) {
+        require(balanceOf(_to).add(_value) <= ADDRESS_HOLDING_AMOUNT, "You cannot hold over 30 million tokens.");
+        if (isAgent(msg.sender)) {
             if (block.timestamp <= contractStartTime.add(TIMESTAMP_INCREMENT_OF_2MONTH)) {
                 return _privateSaleTransferFromOwner(_to, _value);
             }

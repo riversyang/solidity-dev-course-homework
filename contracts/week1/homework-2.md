@@ -1,15 +1,13 @@
 # 第二课作业
 
-### 编程题1：
+### 编程题：
 
-基于 SimplePoS 合约，读懂其数据结构和已经完成的 addMiner、removeMiner 函数，然后完成 selectNewMiner 函数，基于矿工的 stake 数值随机选出一个新矿工即可。随机数可以不用 Oracle 获取。
+参考 Purchase.sol 合约写一个店铺订单管理合约 SimpleShop.sol，要求实现如下功能：
 
-比如有两个矿工，矿工 1 的 stake 是 4，矿工 2 的 stake 是 6，则要求算法每次选取当前矿工时，矿工 1 有 40% 的几率被选中，矿工 2 有 60% 的几率被选中。
+1. 该合约管理某个特定 seller（即合约创建者）的所有订单状态，每个订单是一个 Purchase，每个 Purchase 有 Created、Aborted、Confirmed、Completed 四个状态，分别对应订单创建、订单取消、订单确认和订单完成；
+2. 合约可以同时管理多个不同状态的订单，即支持多个 buyer 同时从 seller 处购买物品（购买物品的逻辑不用在合约中体现），流程与 Purchase.sol 合约相同即可。也就是说，seller 首先创建一个 Purchase，创建的同时把两倍价钱的 Ether 转入；然后 buyer 可以 confirmPurchase，确认时同样转入两倍价钱的 Ether；seller 可以在 buyer 确认前调用 abort 函数来取消订单；buyer 确认之后，仅 buyer 可以调用 confirmReceived 函数来确认收货，该函数将一倍价钱的 Ether 转给 buyer、把三倍价钱的 Ether 转给 seller。这几个函数中需要对应修改 Purchase 的状态。
+3. 在前两个需求之上，增加自动确认收货的逻辑。即在 buyer 调用 confirmPurchase 之后，如果 1 天内没有调用 confirmReceived 函数，那么 1 天之后，seller 就可以调用此函数来完成交易。
+4. Purchase.sol 合约中的三个事件需要保留，名称和参数需要调整，同时需要增加订单创建事件；建议将事件命名为与订单状态一致：PurchaseCreated、PurchaseAborted、PurchaseConfirmed、PurchaseCompleted。此外还应该为这个合约设计合理的查询函数，以允许外部应用查询订单数据（可以简单地根据订单号返回特定的订单数据字段，为每个字段做一个函数）。
+5. 尽量使用 modifier 来控制相应的函数调用，增加必要的 struct 和状态变量来保存所有订单（Purchase）的状态，尽量考虑可能的情况，避免逻辑漏洞。
 
-### 编程题2：
-
-读懂 SimpleRndOracle 合约，完成其中的 registerRequest 函数和 feedbackRndData 函数；并尝试编写测试合约和 truffle 测试程序来测试这个合约。
-
-![](./image/OraclePattern.png)
-
-truffle 测试程序中可以直接用常量设定返回的随机数值，测试合约能收到在测试程序中设定的这个常量即可。
+尝试用 truffle 编写测试程序，基于 ganache 或测试网络进行相应的测试。
